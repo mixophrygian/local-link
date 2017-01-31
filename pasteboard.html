@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset=utf-8>
+    <title>Twitch World</title>
+    <style>
+      body {
+        margin: 0;
+        background-color:#609732
+      }
+      #container {
+        position:absolute;
+        top: 20px;
+        width:100%;
+        height:100%;
+      }
+      #handlebox {
+        position:absolute;
+        top:0px;
+        width:100px;
+        height:100px;
+      }
+      textarea {
+        position:absolute;
+        left:0px;
+        bottom:0px;
+        width:100%;
+        height:10%;
+        z-index:2;
+        border-radius: 10px;
+        overflow: hidden;
+      }
+      .received {
+        border-color: #3E7213;
+      }
+      .sent {
+        border: #224C00 5px;
+      }
+      .new {
+        background-color: #8ABD5F;
+      }
+      .old {
+        background-color: #B9E397;
+      }
+      #paste-text {
+        top:20px;
+        left: 100px;
+        padding: 20px;
+        margin: 20px;
+        border: 1px black;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- <div id="handlebox"></div> -->
+    <div id="container"></div>
+    <textarea id='chatbox-template' style="display:none"></textarea>
+    <script src="js/jquery-1.11.1.js"></script>
+    <script src="js/socket.io-1.4.5.js"></script>
+    <script>
+      var container = $('#container')
+      var socket = io();
+      var uniqueID = localStorage.playerID;
+      var boxCount = 0;
+
+      var handleVal = localStorage.handle;
+      socket.emit('register', boxCount, uniqueID);
+
+      $('#handlebox').val(handleVal || '');
+
+      function createInput(e) {
+        var textID = '#chatbox-'+(boxCount++);
+        var textarea = $('#chatbox-template');
+        textarea = textarea.clone();
+        textarea.val('');
+        textarea.attr('id', textID);
+
+        var x = e.pageX-50 + 'px';
+        var y = e.pageY-50 + 'px';
+        textarea.css({
+          'position': 'absolute',
+          "left": x,
+          "top": y,
+          'display': 'block',
+          'width': "100px",
+          'height': '50px'
+        });
+        textarea.addClass('sent new')
+
+        textarea.keypress(function(e) {
+          if (e.which !== 13) {
+            return;
+          }
+          socket.emit('add_text', {
+            id: textID,
+            text:textarea.val(),
+            left:x,
+            top:y
+          });
+          textarea.attr('disabled', true);
+          textarea.blur();
+        })
+        textarea.blur(function(e) {
+          if (textarea.val().length === 0) {
+            textarea.remove();
+          }
+        });
+        return textarea;
+      }
+
+      container.click(function(e) {
+        var textarea = createInput(e);
+        container.append(textarea);
+        textarea.focus();
+      })
+
+      socket.on('registered', function(data) {
+        localStorage.playerID = data.id;
+        localStorage.handle = data.handle;
+      });
+      //$('#handlebox').val()
+
+      socket.on('add_text', function(content) {
+        console.log(content)
+
+        var textarea = $('#chatbox-template');
+        textarea = textarea.clone();
+        textarea.val(content.text);
+
+        var left = content.left || "0px";
+        var top = content.top || "0px";
+
+        var textID = $('#chatbox-'+(boxCount++))// content.id;
+        textarea.attr('id', textID);
+        textarea.attr('disabled', true);
+
+        $('textarea').removeClass('new');
+        $('textarea').addClass('old');
+
+        textarea.removeClass('old');
+        textarea.addClass("received new");
+        textarea.css({
+          "position": "relative",
+          "top": top,
+          "left": left,
+          'display': 'block',
+          'float': 'left',
+          'width': '100px',
+          'height': '50px'
+        });
+        container.append(textarea);
+      });
+    </script>
+  </body>
+</html>
