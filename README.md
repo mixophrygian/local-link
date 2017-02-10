@@ -1,12 +1,18 @@
 
-# Local Link
+# Local Link `v0.1`
 
 >  A simple local server app that dispenses a pasteboard site available to all with immediate access to the server.
 
-### Features
-- pasta/paste a link
-- organize by categories?
-- user handle for paste credit
-- drop file links for webrtc transfer
+### Current Features
+- Temporary space
+- Stateless
+- Click to chat
+- Simple interface
+
+### In Progress
+- pasta/paste a link and/or markdown
+- stack bubbles (gravity left or down)
+- user handle for bubble credit
+- drop file/image links for webrtc transfer
 
 
