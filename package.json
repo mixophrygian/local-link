@@ -1,6 +1,6 @@
 {
   "name": "local-link",
-  "version": "0.0.1",
+  "version": "0.1",
   "description": "local area network pasteboard",
   "dependencies": {
     "express": "4.10.2",

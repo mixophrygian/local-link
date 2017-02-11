@@ -15,4 +15,6 @@
 - user handle for bubble credit
 - drop file/image links for webrtc transfer
 
-
+### NOTES
+- [pallete](http://paletton.com/#uid=12A0u0kllllaFw0g0qFqFg0w0aF)
+-
