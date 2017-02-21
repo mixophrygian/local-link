@@ -30,21 +30,34 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         width:100%;
         height:100%;
       }
-      #handlebox {
-        position:absolute;
-        top:0px;
-        width:100px;
-        height:50px;
-      }
       textarea {
         position:absolute;
-        left:0px;
-        bottom:0px;
         width:100%;
         height:10%;
-        z-index:2;
+        padding: 5px;
         border-radius: 10px;
         overflow: hidden;
+      }
+      .handle {
+        position:absolute;
+        top:0px;
+        right:0px;
+        width:100px;
+        height:25px;
+        border:2px black;
+        margin: 5px;
+        background-color: #224C00;
+        color: #B9E397;
+      }
+      .handle-other {
+        background-color: #3E7213;
+      }
+      .handle-offline {
+        background-color: #787D73;
+        color: black;
+      }
+      .pinned {
+        border:2px #609732;
       }
       .received {
         border-color: #3E7213;
@@ -68,31 +81,60 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     </style>
   </head>
   <body>
-    <!-- <div id="handlebox"></div> -->
+    <textarea id="handlebox" class="handle"></textarea>
     <div id="container"></div>
-    <textarea id='chatbox-template' style="display:none"></textarea>
+    <textarea id='chatbox-template' class="bubble" style="display:none"></textarea>
     <script src="js/jquery-1.11.1.js"></script>
     <script src="js/socket.io-1.4.5.js"></script>
     <script>
+
+      function getRandomName() {
+        var names = ["pepper", "angel", "cloud", "bat", "timmie"];
+        return names[Math.floor(Math.random()*names.length)];
+      }
+
       var container = $('#container')
       var socket = io();
-      var uniqueID = localStorage.playerID;
+      var uniqueID = localStorage.handle || getRandomName();
       var boxCount = 0;
+      var current = null;
 
-      var handleVal = localStorage.handle;
-      socket.emit('register', boxCount, uniqueID);
+      socket.emit('register', uniqueID);
 
-      $('#handlebox').val(handleVal || '');
+      var EnterKey = 13;
+      var EscKey = 27;
 
-      function createInput(e) {
-        var textID = '#chatbox-'+(boxCount++);
+      var mouseX = 0, mouseY = 0;
+      container.on('mousemove', function(e) {
+        mouseX = e.pageX;
+        mouseY = e.pageY;
+      });
+
+      var handleBox = $('#handlebox');
+      handleBox.val(uniqueID || getRandomName());
+      handleBox.keypress(function(e) {
+        if (e.which !== EnterKey) {
+          return;
+        }
+        var newHandle = handleBox.val();
+        if (newHandle.length <= 0) {
+          return;
+        }
+        localStorage.handle = newHandle;
+        socket.emit('update_handle', handleBox.val());
+        e.preventDefault();
+        handleBox.blur();
+      })
+      function createInput() {
         var textarea = $('#chatbox-template');
         textarea = textarea.clone();
         textarea.val('');
+
+        var textID = '#chatbox-'+uniqueID+"-"+(boxCount++);
         textarea.attr('id', textID);
 
-        var x = e.pageX-50 + 'px';
-        var y = e.pageY-50 + 'px';
+        var x = mouseX+'px';
+        var y = mouseY+'px';
         textarea.css({
           'position': 'absolute',
           "left": x,
@@ -104,66 +146,161 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         textarea.addClass('sent new')
 
         textarea.keypress(function(e) {
-          if (e.which !== 13) {
+          if (e.which !== EnterKey) {
             return;
           }
-          socket.emit('add_text', {
-            id: textID,
+          var obj = {
+            id: textarea.id,
             text:textarea.val(),
             left:x,
             top:y
-          });
+          };
+          console.log(obj)
+          socket.emit('add_text', obj);
           textarea.attr('disabled', true);
           textarea.blur();
+          setTimeout(function() {
+            current = null;
+          }, 500);
+
+          e.preventDefault();
         })
         textarea.blur(function(e) {
           if (textarea.val().length === 0) {
             textarea.remove();
+            current = null;
           }
         });
         return textarea;
       }
 
-      container.click(function(e) {
-        var textarea = createInput(e);
-        container.append(textarea);
-        textarea.focus();
-      })
+      function addChat() {
+        if (current !== null) {
+          return;
+        }
+        current = createInput();
+        container.append(current);
+        current.focus();
+      }
 
-      socket.on('registered', function(data) {
-        localStorage.playerID = data.id;
-        localStorage.handle = data.handle;
+      $(document).keyup(function(e) {
+        if (e.keyCode === EscKey && current) {
+          current.remove();
+          current = null;
+        }
       });
-      //$('#handlebox').val()
+
+      container.keypress(function(e) {
+        if (e.which === EnterKey) {
+          addChat();
+          e.preventDefault();
+        }
+      });
+      container.click(addChat);
+
+      function newBubble(content) {
+        var textarea = $('#chatbox-template');
+        textarea = textarea.clone();
+        textarea.attr('id', content.id);
+        textarea.val(content.text);
+
+        var left = content.left || 0;
+        var right = content.right || 0;
+        var top = content.top || 0;
+
+        textarea.removeClass('old received sent');
+        textarea.addClass("new");
+        if (left !== 0) {
+          textarea.css({"left": left});
+        }
+        if (top !== 0) {
+          textarea.css({"top": top});
+        }
+        if (right !== 0) {
+          textarea.css({"right": right});
+        }
+        textarea.css({
+          "position": "absolute",
+          'display': 'block',
+          'width': '100px',
+          'height': (content.height || '50px')
+        });
+        return textarea;
+      }
+
+      var handleCount = 0; // FIXME this will overflow
+      function addHandleBox(data) {
+        var bubble = newBubble({
+          text:data.handle,
+          id: "handle-"+data.handle,
+          top: (((handleCount * 50)+20)+'px'),
+          right: '0px',
+          height: '25px'
+        });
+        bubble.css({'right': '0px'});
+        //if (data.online)
+        {
+          bubble.addClass('handle handle-other')
+        }
+        // else {
+        //   bubble.addClass('handle handle-offline');
+        // }
+        bubble.removeClass('new')
+        handleCount += 1;
+        container.append(bubble);
+      }
+      socket.on('registered', function(data) {
+        localStorage.handle = data.handle;
+        // handleCount = data.people.length;
+        // print list of people here
+        for (var key in data.people) {
+          addHandleBox(data.people[key]); // FIXME float up
+        }
+        // FIXME load pinned and existing data
+      });
+
+      socket.on('update_handle', function(handles) {
+        var prev = handles.prev;
+        var handle = handles.curr;
+        var hBox = $('#handle-'+prev);
+        hBox.attr('id', handle);
+        hBox.val(handle);
+        uniqueID = handle;
+        localStorage.uniqueID = handle;
+      })
+      socket.on('other_disconnect', function(handle) {
+        var hBox = $('#handle-'+handle);
+        hBox.removeClass('handle-other');
+        hBox.addClass('handle-offline');
+      });
+      socket.on('other_registered', function(handle) {
+        var hBox = $('#handle-'+handle);
+        if (hBox.length) {
+          hBox.addClass('handle-other');
+          hBox.removeClass('handle-offline');
+        } else {
+          addHandleBox(handle);
+        }
+      });
+
+      socket.on('add_pinned', function(content) {
+        var textarea = newBubble(content);
+        //textarea.attr('disabled', true);
+        textarea.addClass('pinned');
+        container.append(textarea);
+      });
 
       socket.on('add_text', function(content) {
         console.log(content)
+        var textarea = newBubble(content);
+        //textarea.attr('disabled', true);
 
-        var textarea = $('#chatbox-template');
-        textarea = textarea.clone();
-        textarea.val(content.text);
-
-        var left = content.left || "0px";
-        var top = content.top || "0px";
-
-        var textID = $('#chatbox-'+(boxCount++))// content.id;
-        textarea.attr('id', textID);
-        textarea.attr('disabled', true);
-
-        $('textarea').removeClass('new');
-        $('textarea').addClass('old');
+        $('textarea.bubble').removeClass('new');
+        $('textarea.bubble').addClass('old');
 
         textarea.removeClass('old');
         textarea.addClass("received new");
-        textarea.css({
-          "position": "absolute",
-          "top": top,
-          "left": left,
-          'display': 'block',
-          'float': 'left',
-          'width': '100px',
-          'height': '50px'
-        });
+
         container.append(textarea);
       });
     </script>

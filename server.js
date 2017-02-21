@@ -44,6 +44,7 @@ marked.setOptions({
 });
 
 var entities = {}; // users
+var messages = [];
 
 function sendOthers(message, data, exclude) {
   for (var uid in entities) {
@@ -56,45 +57,47 @@ function sendOthers(message, data, exclude) {
   }
 }
 
-function myID(socket) {
-  return entities[socket.uid].id;
-}
 
-function myHandle(socket) {
-  var data = entities[socket.uid];
-  if (data) {
-    return data.handle;
-  }
-  return 'bird-person';
+// keys must be {a, c} for hash {a:1,b:2,c:3}
+function slice(data, keys) {
+  return ((keys) => (keys))(data);
 }
 
 io.on('connection', function(socket){
-  socket.on('register', function(handle, id) {
-    if (!id) {
-      id = Math.random().toString(36).substring(3,16);
-    }
-    socket.uid = id;
-    entities[id] = { id:id||'', handle:handle||'', socket:socket };
-    socket.emit('registered', {handle:handle, id:id});
-    socket.emit('add_text', {text:"[System Msg] Hello There!"});
-    //sendOthers('register', handle, id);
+  socket.on('update_handle', function(handle) {
+    var me = entities[socket.uid];
+    var prevHandle = me.handle;
+    me.handle = handle;
+    sendOthers('update_handle', {prev:prevHandle, curr:handle});
+  });
+  socket.on('register', function(handle) {
+    handle = handle || Math.random().toString(36).substring(3,16);
+    socket.uid = handle;
+    entities[handle] = { handle:handle, socket:socket };
+    var ents = [];
+    Object.keys(entities).map(function(key) {
+      var ent = entities[key];
+      if (ent.handle === socket.uid) {
+        return;
+      }
+      ents.push({handle:ent.handle, online:ent.socket.connected});
+    });
+    socket.emit('registered', {handle:handle, messages:messages, people:ents});
+    socket.emit('add_pinned', {
+      text:"[System Msg] Hello! Click to Message!",
+      left:0,
+      top:0
+    });
+    //socket.emit('add_pinned_list', messages);
+    sendOthers('other_registered', handle, handle);
   })
 
   socket.on('add_text', function(content) {
-    content.handle = myHandle(socket);
+    content.handle = socket.uid;
+    messages.push({text:content.text, handle:content.handle});
     sendOthers('add_text', content, socket.uid);
   });
-  // socket.on('add_link', function(content) {
-  //   content.handle = myHandle(socket);
-  //   sendOthers('add_link', content);
-  // });
-  // socket.on('add_picture', function(content) {
-  //   content.handle = myHandle(socket);
-  //   sendOthers('add_picture', content);
-  // });
-
-  // socket.on('disconnect', function() {
-  //   var ent = entities[socket.uid];
-
-  // })
+  socket.on('disconnect', function() {
+    sendOthers('other_disconnect', socket.uid, socket.uid);
+  })
 });
