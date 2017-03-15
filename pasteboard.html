@@ -20,11 +20,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     <meta charset=utf-8>
     <title>Twitch World</title>
     <style>
+    
       body {
         margin: 0;
         background-image: url('./images/green_felt.jpg');
-        
       }
+      
       #container {
         position:absolute;
         top: 20px;
@@ -50,6 +51,17 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         background-size: cover;
         text-align: center;
         padding-top: 20px;
+        animation: fade 300s;
+        animation-iteration-count: 1;
+      }
+      
+      @keyframes fade {
+        0% {
+          opacity: 1;
+        }
+        100% {
+          opacity: 0;
+        }
       }
       /*
       //not being used for the party
@@ -103,6 +115,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         var y = e.pageY-50 + 'px';
         textarea.css({
           'position': 'absolute',
+          'opacity': '0',
           "left": x,
           "top": y,
           'display': 'block',
@@ -121,14 +134,15 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             left:x,
             top:y
           });
-          textarea.attr('disabled', true);
           textarea.blur();
-        })
+        });
+        
         textarea.blur(function(e) {
           if (textarea.val().length === 0) {
             textarea.remove();
           }
         });
+        
         return textarea;
       }
 
