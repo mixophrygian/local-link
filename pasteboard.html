@@ -182,7 +182,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             text:textarea.val(),
             left:x,
             top:y
-          };
+          });
           console.log(obj)
           socket.emit('add_text', obj);
           textarea.attr('disabled', true);
