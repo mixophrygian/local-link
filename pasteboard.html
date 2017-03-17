@@ -111,32 +111,26 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     <script src="js/jquery-1.11.1.js"></script>
     <script src="js/socket.io-1.4.5.js"></script>
     <script>
-<<<<<<< HEAD
 
       function getRandomName() {
         var names = ["pepper", "angel", "cloud", "bat", "timmie"];
         return names[Math.floor(Math.random()*names.length)];
       }
 
-=======
-    
->>>>>>> message styling and slight js cleanup
       var container = $('#container')
       var socket = io();
       var uniqueID = localStorage.handle || getRandomName();
       var boxCount = 0;
-<<<<<<< HEAD
+      
       var current = null;
 
       socket.emit('register', uniqueID);
 
       var EnterKey = 13;
       var EscKey = 27;
-=======
       var handleVal = localStorage.handle;
       
       socket.emit('register', boxCount, uniqueID);
->>>>>>> message styling and slight js cleanup
 
       var mouseX = 0, mouseY = 0;
       container.on('mousemove', function(e) {
