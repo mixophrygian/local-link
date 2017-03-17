@@ -185,7 +185,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           });
           console.log(obj)
           socket.emit('add_text', obj);
-          textarea.attr('disabled', true);
           textarea.blur();
           setTimeout(function() {
             current = null;
@@ -319,7 +318,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
       socket.on('add_pinned', function(content) {
         var textarea = newBubble(content);
-        //textarea.attr('disabled', true);
         textarea.addClass('pinned');
         container.append(textarea);
       });
@@ -327,7 +325,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       socket.on('add_text', function(content) {
         console.log(content)
         var textarea = newBubble(content);
-        //textarea.attr('disabled', true);
 
         $('textarea.bubble').removeClass('new');
         $('textarea.bubble').addClass('old');
